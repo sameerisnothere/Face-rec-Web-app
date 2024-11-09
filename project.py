@@ -3,6 +3,11 @@ import os
 import cv2
 from mtcnn import MTCNN
 import sys
+import xlsxwriter
+
+sys.stdout.reconfigure(encoding='utf-8')
+
+print(os.getcwd())
 
 def load_and_encode_samples(folder_path, scale_factor=1.0):
     samples = {}  # Dictionary to store person name to face encoding mapping
@@ -49,7 +54,7 @@ def load_and_encode_samples(folder_path, scale_factor=1.0):
 
 
 # Example usage:
-train_dir = 'DL_Dataset\Train1'  # Update with the path to your Train1 directory
+train_dir = r'C:\Users\samee.WINDOWS-2L0L316\OneDrive\Desktop\DL project\DL_Dataset\Train1'  # Update with the path to your Train1 directory
 sample_encodings = load_and_encode_samples(train_dir, scale_factor=1.5)
 
 # Display the number of loaded samples
@@ -62,17 +67,17 @@ def main(image_path):
     try:
         # Load and preprocess the target image (image1.jpg)
         target_image_path = image_path # Update with the path to your target image
-        target_image_path = target_image_path.decode('utf-8')
+        print("target image path: " + target_image_path)
         target_image = cv2.imread(target_image_path)
-        print("target image: " + target_image)
-        # if target_image is None:
-        #     print("Error: Unable to load the image.")
-        #     return
+        print("code reached after cv2.imread")
+        if target_image is None:
+            print("Error: Unable to load the image.")
+            return
         target_image_rgb = cv2.cvtColor(target_image, cv2.COLOR_BGR2RGB)
-
+        print("code reached after cv2.cvtColor")
         # Detect faces using MTCNN
         result = detector.detect_faces(target_image_rgb)
-
+        print("code reached after 3")
         # Initialize lists to store face locations and encodings
         face_locations = []
         face_encodings = []
@@ -85,7 +90,7 @@ def main(image_path):
 
             # Extract face encodings from the target image
             face_encodings = face_recognition.face_encodings(target_image_rgb, face_locations)
-
+        print("code reached after 4")
         # Load and encode sample faces from the Train1 dataset
         def load_and_encode_samples(folder_path):
             samples = {}  # Dictionary to store person name to face encoding mapping
@@ -126,11 +131,11 @@ def main(image_path):
             return samples
 
         # Path to the extracted Train1 directory
-        train_dir = 'DL_Dataset/Train1'  # Update with the path to your Train1 directory
+        train_dir = r'C:\Users\samee.WINDOWS-2L0L316\OneDrive\Desktop\DL project\DL_Dataset\Train1'  # Update with the path to your Train1 directory
 
         # Load and encode sample faces from the Train1 dataset
         sample_encodings = load_and_encode_samples(train_dir)
-
+        print("code reached after 5")
         # Initialize a dictionary to store recognized names for each face
         recognized_names = {}
 
@@ -155,7 +160,7 @@ def main(image_path):
 
             # Store recognized name for this face
             recognized_names[(top, right, bottom, left)] = recognized_name
-
+            print("code reached after 6")
             # Print recognized name along with bounding box coordinates
             print(f"Recognized: {recognized_name}, Bounding Box: (Top: {top}, Right: {right}, Bottom: {bottom}, Left: {left})")
 
@@ -167,6 +172,29 @@ def main(image_path):
             cv2.rectangle(target_image, (left, bottom - label_size[1] - 10), (right, bottom), (0, 255, 0), cv2.FILLED)
             cv2.putText(target_image, recognized_name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1)
 
+        workbook = xlsxwriter.Workbook('attendance.xlsx')
+        worksheet = workbook.add_worksheet()
+
+        # Write the headers to the Excel file
+        worksheet.write(0, 0, 'Present')
+        worksheet.write(0, 1, 'Bounding Box (Top)')
+        worksheet.write(0, 2, 'Bounding Box (Right)')
+        worksheet.write(0, 3, 'Bounding Box (Bottom)')
+        worksheet.write(0, 4, 'Bounding Box (Left)')
+
+        # Write the recognized names and bounding box coordinates to the Excel file
+        row = 1
+        for face_location, recognized_name in recognized_names.items():
+            top, right, bottom, left = face_location
+            worksheet.write(row, 0, recognized_name)
+            worksheet.write(row, 1, top)
+            worksheet.write(row, 2, right)
+            worksheet.write(row, 3, bottom)
+            worksheet.write(row, 4, left)
+            row += 1
+
+        # Close the workbook
+        workbook.close()
         # Display the annotated image with recognized faces
         cv2.imshow("Recognized Faces", target_image)
         cv2.waitKey(0)
@@ -184,8 +212,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Get the image path from command-line arguments
-    image_path = sys.argv[1]
-    # print("image path: " + image_path)
+    image_path = sys.argv[1].encode('utf-8').decode('unicode_escape')
+    print("image path: " + image_path)
 
     # Call the main function with the image path
-    main(image_path.encode('utf-8'))
+    main(image_path)
